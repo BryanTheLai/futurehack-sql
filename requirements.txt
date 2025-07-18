@@ -1,7 +1,7 @@
 # requirements.txt
 
-crewai
-crewai-tools
+crewai[tools]
+
 openai
 streamlit
 python-dotenv
