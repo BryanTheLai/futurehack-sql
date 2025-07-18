@@ -125,7 +125,7 @@ st.subheader("Your AI Data Scientist")
 
 st.write(
     "Welcome to CogniQuery! Connect to your NeonDB database, ask a question in plain English, "
-    "and receive a comprehensive PDF report with charts and insights."
+    "and receive a comprehensive report with charts and insights."
 )
 
 # --- User Inputs ---
@@ -235,7 +235,7 @@ if st.button("Generate Report"):
             if os.path.exists(chart_path):
                 try:
                     st.subheader("📈 Generated Chart")
-                    st.image(chart_path, caption="Analysis Chart", use_column_width=True)
+                    st.image(chart_path, caption="Analysis Chart", use_container_width=True)
                     chart_found = True
                     st.success("✅ Chart displayed successfully!")
                 except Exception as e:
@@ -248,7 +248,7 @@ if st.button("Generate Report"):
                     chart_file = chart_files[0]  # Use first PNG found
                     try:
                         st.subheader("📈 Generated Chart")
-                        st.image(f"output/{chart_file}", caption="Analysis Chart", use_column_width=True)
+                        st.image(f"output/{chart_file}", caption="Analysis Chart", use_container_width=True)
                         st.info(f"📊 Found and displayed chart: {chart_file}")
                         chart_found = True
                     except Exception as e:
