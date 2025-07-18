@@ -130,41 +130,82 @@ st.write(
 
 # --- User Inputs ---
 st.sidebar.header("Configuration")
-# Key inputs - no default values shown, but env vars used as fallback
+# Use blank inputs to hide secrets; fallback to .env defaults securely
 openai_api_key = st.sidebar.text_input(
     "OpenAI API Key", 
     type="password", 
-    placeholder="Enter your OpenAI API key (optional if set in .env)"
-)
-gemini_api_key = st.sidebar.text_input(
-    "Gemini API Key", 
-    type="password", 
-    placeholder="Enter your Gemini API key (optional if set in .env)"
+    value="",
+    placeholder="Leave blank to use default key securely stored in .env"
 )
 db_connection_string = st.sidebar.text_input(
     "NeonDB Connection String",
-    placeholder="postgresql://user:password@host:port/dbname (optional if set in .env)"
+    value="",
+    placeholder="Leave blank to use default connection string from .env"
 )
 
-st.header("Ask Your Data a Question")
+# --- Recommended Queries Section ---
+st.header("💡 Recommended Queries")
+st.write("*New to the dataset? Start with these sample questions to explore your data:*")
+
+# Sample questions with engaging descriptions
+sample_queries = [
+    {
+        "title": "🔍 Investigate Southeast Asia Profit Issues",
+        "description": "Identify regional performance problems and root cause",
+        "query": "Our profit in Southeast Asia is a disaster. Find the top 3 sub-categories that are losing the most money in that region. Show me their total sales and profit, and investigate if high discounts are the cause. Show with visualizations"
+    },
+    {
+        "title": "💰 Discount Impact Analysis",
+        "description": "Understand how the discounts affect bottom line",
+        "query": "Show me the relationship between discount levels and profitability with visualization. Are high discounts killing our margins? Create a chart showing profit vs discount percentage."
+    }
+]
+
+# Display sample queries in a nice grid
+cols = st.columns(2)
+for i, sample in enumerate(sample_queries):
+    with cols[i % 2]:
+        with st.container():
+            st.markdown(f"**{sample['title']}**")
+            st.caption(sample['description'])
+            if st.button(f"Use This Query", key=f"sample_{i}", use_container_width=True):
+                st.session_state.selected_query = sample['query']
+
+st.header("🤖 Ask Your Data a Question")
+
+# Use selected query if available
+default_query = st.session_state.get('selected_query', '')
 query = st.text_area(
     "Enter your question here:",
+    value=default_query,
     placeholder="e.g., 'What were our total sales per month for the last year?'",
     height=150,
 )
 
-if st.button("Generate Report"):
+
+# Initialize session state for button control
+if 'report_generating' not in st.session_state:
+    st.session_state.report_generating = False
+
+# Generate Report button with conditional disable
+generate_button_disabled = st.session_state.report_generating
+button_text = "⏳ Generating Report..." if st.session_state.report_generating else "Generate Report"
+
+if st.button(button_text, disabled=generate_button_disabled):
+    # Set the generating state to True
+    st.session_state.report_generating = True
+    
     # Use user inputs or fall back to environment variables
     final_openai_key = openai_api_key.strip() or os.getenv("OPENAI_API_KEY", "")
-    final_gemini_key = gemini_api_key.strip() or os.getenv("GEMINI_API_KEY", "")
     final_db_conn = db_connection_string.strip() or os.getenv("NEONDB_CONN_STR", "")
     
-    if not final_openai_key or not final_gemini_key or not final_db_conn or not query:
-        st.error("Please provide all required inputs: OpenAI Key, Gemini Key, DB Connection String, and your query.")
+    if not final_openai_key or not final_db_conn or not query:
+        st.error("Please provide all required inputs: OpenAI Key, DB Connection String, and your query.")
+        # Reset the generating state if there's an error
+        st.session_state.report_generating = False
     else:
         # Set the API key for the current process
         os.environ["OPENAI_API_KEY"] = final_openai_key
-        os.environ["GEMINI_API_KEY"] = final_gemini_key
         os.environ["NEONDB_CONN_STR"] = final_db_conn
         
         # Clean up old files before running
@@ -179,7 +220,7 @@ if st.button("Generate Report"):
 
         try:
             # Initialize and run the crew
-            cogniquery_crew = CogniQueryCrew(db_connection_string=db_connection_string)
+            cogniquery_crew = CogniQueryCrew(db_connection_string=final_db_conn)
             
             # Run the crew in a separate process while updating the UI
             import threading
@@ -214,69 +255,79 @@ if st.button("Generate Report"):
                 
             with status_placeholder:
                 st.success("✅ Report generated successfully!")
+            
+            # Reset the generating state on success
+            st.session_state.report_generating = False
 
             # Display the generated markdown report
             st.subheader("📊 Generated Analysis Report")
             st.markdown(result[0].raw, unsafe_allow_html=True)
             
-            # Display chart image with improved detection
-            chart_path = "output/chart.png"
-            chart_abs_path = os.path.abspath(chart_path)
+            # Display all chart images with improved detection
+            output_dir = "output"
+            chart_files = []
             
             # Debug: List all files in output directory
             try:
-                output_files = os.listdir("output")
-                st.write(f"📁 Files in output directory: {output_files}")
+                if os.path.exists(output_dir):
+                    output_files = os.listdir(output_dir)
+                    chart_files = [f for f in output_files if f.endswith('.png')]
+                    st.write(f"📁 Files in output directory: {output_files}")
+                    st.write(f"📊 Chart files found: {chart_files}")
+                else:
+                    st.write("📁 Output directory does not exist")
             except Exception as e:
                 st.write(f"📁 Could not list output directory: {e}")
             
-            # Check for chart with multiple approaches
-            chart_found = False
-            if os.path.exists(chart_path):
-                try:
-                    st.subheader("📈 Generated Chart")
-                    st.image(chart_path, caption="Analysis Chart", use_container_width=True)
-                    chart_found = True
-                    st.success("✅ Chart displayed successfully!")
-                except Exception as e:
-                    st.error(f"❌ Error displaying chart: {e}")
-            
-            if not chart_found:
-                # Alternative chart detection
-                chart_files = [f for f in os.listdir("output") if f.endswith('.png')]
-                if chart_files:
-                    chart_file = chart_files[0]  # Use first PNG found
-                    try:
-                        st.subheader("📈 Generated Chart")
-                        st.image(f"output/{chart_file}", caption="Analysis Chart", use_container_width=True)
-                        st.info(f"📊 Found and displayed chart: {chart_file}")
-                        chart_found = True
-                    except Exception as e:
-                        st.error(f"❌ Error displaying alternative chart: {e}")
+            # Display charts
+            if chart_files:
+                st.subheader("📈 Generated Charts")
                 
-                if not chart_found:
-                    st.warning("⚠️ Chart was not generated or could not be found. Check the activity log for details.")
-                    st.write(f"Expected chart location: {chart_abs_path}")
-                    st.write(f"Chart exists check: {os.path.exists(chart_path)}")
-                    if os.path.exists("output"):
-                        output_contents = os.listdir("output")
-                        st.write(f"Output directory contents: {output_contents}")
-                    else:
-                        st.write("Output directory does not exist")
+                # Sort chart files for consistent display order
+                chart_files.sort()
+                
+                # Display each chart
+                for i, chart_file in enumerate(chart_files):
+                    chart_path = os.path.join(output_dir, chart_file)
+                    try:
+                        # Create a more descriptive caption
+                        chart_name = chart_file.replace('.png', '').replace('_', ' ').title()
+                        st.image(chart_path, caption=f"{chart_name}", use_container_width=True)
+                        
+                        # Add some spacing between charts
+                        if i < len(chart_files) - 1:
+                            st.write("")
+                            
+                    except Exception as e:
+                        st.error(f"❌ Error displaying chart {chart_file}: {e}")
+                
+                st.success(f"✅ {len(chart_files)} chart(s) displayed successfully!")
+                
+            else:
+                st.warning("⚠️ No charts were generated or could not be found. Check the activity log for details.")
+                st.write(f"Expected charts location: {os.path.abspath(output_dir)}")
+                if os.path.exists(output_dir):
+                    output_contents = os.listdir(output_dir)
+                    st.write(f"Output directory contents: {output_contents}")
+                else:
+                    st.write("Output directory does not exist")
 
         except Exception as e:
             with status_placeholder:
                 st.error(f"❌ An error occurred: {e}")
+            # Reset the generating state on error
+            st.session_state.report_generating = False
         finally:
+            # Ensure the generating state is reset
+            st.session_state.report_generating = False
             # Keep the activity log visible after completion
             pass
 
 st.sidebar.info(
     "**How it works:**\n"
-    "1. **Business Analyst:** Refines your query.\n"
-    "2. **Database Administrator:** Writes the SQL code.\n"
-    "3. **Data Scientist:** Runs the query and creates charts.\n"
-    "4. **Communications Strategist:** Compiles the final report.\n\n"
+    "1. **Business Analyst:** Refines your query and explores database schema.\n"
+    "2. **Data Scientist:** Writes SQL queries, analyzes data, and creates charts.\n"
+    "3. **Communications Strategist:** Compiles the final report.\n\n"
     "**🔍 Activity Log:** Watch the agents work in real-time! "
     "You'll see all SQL queries, tool usage, and progress updates as they happen.\n\n"
     "**💡 Configuration:** API keys and DB connection can be set in .env file "

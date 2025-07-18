@@ -3,10 +3,12 @@
 import os
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
+from crewai_tools import CodeInterpreterTool
 
-from .tools.db_tools import DatabaseTools
+from .tools.schema_explorer_tool import SchemaExplorerTool
+from .tools.sample_data_tool import SampleDataTool
+from .tools.sql_executor_tool import SQLExecutorTool
 from .tools.reporting_tools import ReportingTools
-from .tools.logged_code_interpreter import LoggedCodeInterpreterTool
 from .tools.activity_logger import get_activity_logger
 
 # Set up the default LLM
@@ -24,9 +26,16 @@ class CogniQueryCrew():
 
     def __init__(self, db_connection_string: str):
         self.db_connection_string = db_connection_string
-        self.db_tool = DatabaseTools()
+        self.schema_tool = SchemaExplorerTool()
+        self.sample_data_tool = SampleDataTool()
+        self.sql_executor_tool = SQLExecutorTool()
         self.report_tool = ReportingTools()
-        self.code_interpreter_tool = LoggedCodeInterpreterTool()
+        self.code_interpreter_tool = CodeInterpreterTool()
+        
+        # Configure all database tools with the connection string
+        for tool in [self.schema_tool, self.sample_data_tool, self.sql_executor_tool]:
+            if hasattr(tool, 'db_connection_string'):
+                tool.db_connection_string = db_connection_string
         
         # Clear previous activity log
         logger = get_activity_logger()
@@ -36,15 +45,7 @@ class CogniQueryCrew():
     def prompt_enhancer(self) -> Agent:
         return Agent(
             config=self.agents_config['prompt_enhancer'],
-            tools=[self.db_tool],
-            verbose=True
-        )
-
-    @agent
-    def sql_generator(self) -> Agent:
-        return Agent(
-            config=self.agents_config['sql_generator'],
-            tools=[self.db_tool],
+            tools=[self.schema_tool, self.sample_data_tool],
             verbose=True
         )
 
@@ -52,7 +53,7 @@ class CogniQueryCrew():
     def data_analyst(self) -> Agent:
         return Agent(
             config=self.agents_config['data_analyst'],
-            tools=[self.db_tool, self.code_interpreter_tool],
+            tools=[self.schema_tool, self.sample_data_tool, self.sql_executor_tool, self.code_interpreter_tool],
             verbose=True,
             allow_delegation=False
         )
@@ -80,27 +81,6 @@ class CogniQueryCrew():
         )
 
     @task
-    def generate_sql_task(self) -> Task:
-        logger = get_activity_logger()
-        orig = self.tasks_config['generate_sql_task']
-        # The Business Analyst will now provide schema-aware refined queries
-        description = orig['description'] + "\n\nNOTE: The database connection is automatically configured. When using Database Tools, only provide the SQL query - do not specify connection string parameters. The refined question from the Business Analyst should already be schema-aware."
-        
-        # Log task start
-        def log_start_callback(task):
-            logger.log_task_start("Database Administrator", "generate_sql_task", description)
-        
-        return Task(
-            config={
-                'description': description,
-                'expected_output': orig['expected_output']
-            },
-            agent=self.sql_generator(),
-            context=[self.enhance_prompt_task()],
-            callbacks={'on_start': log_start_callback}
-        )
-
-    @task
     def analyze_data_task(self) -> Task:
         logger = get_activity_logger()
         # Notify agent that connection is auto-configured
@@ -116,7 +96,7 @@ class CogniQueryCrew():
                 'expected_output': self.tasks_config['analyze_data_task']['expected_output']
             },
             agent=self.data_analyst(),
-            context=[self.generate_sql_task()],
+            context=[self.enhance_prompt_task()],  # Direct dependency on business analyst
             callbacks={'on_start': log_start_callback}
         )
 

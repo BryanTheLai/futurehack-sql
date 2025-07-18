@@ -4,57 +4,153 @@ enhance_prompt_task:
   description: >
     Take the user's query: '{query}' and refine it into a single, highly detailed,
     and specific question that is ready for data analysis. First, examine the database
-    schema using the available tools to understand what tables, columns, and data types
-    are available. Then refine the user's query to be specific about which data fields
-    should be analyzed, ensuring the question is feasible with the available data structure.
-    The question must be self-contained and unambiguous.
+    schema using SchemaExplorer() to understand what tables, columns, data types,
+    relationships, and constraints are available. Then examine sample data from key
+    tables using SampleData(table_name='table_name') to understand data patterns. 
+    Pay special attention to:
+    
+    1. Primary keys and foreign key relationships between tables
+    2. Data types and constraints for each column
+    3. Sample data from relevant tables to understand data quality and patterns
+    4. Temporal columns that enable time-based analysis
+    5. Categorical dimensions for breakdowns and comparisons
+    
+    Then refine the user's query to be specific about which data fields should be analyzed,
+    how tables should be joined, and what relationships should be leveraged. Ensure the 
+    question is feasible with the available data structure and takes advantage of the 
+    relational database design.
+    
+    The question must be self-contained and unambiguous, providing clear guidance on:
+    - Which tables to query and how they relate
+    - What metrics to calculate and how
+    - What dimensions to analyze
+    - What time periods or filters to apply
   expected_output: >
     A single, refined, and detailed question in plain English that specifically references
-    the available data fields and is feasible with the current database schema.
-
-generate_sql_task:
-  description: >
-    Based on the refined question, write a single, syntactically correct SQL query
-    to retrieve the necessary data. Use the provided database schema to ensure all
-    table and column names are correct.
-  expected_output: >
-    A single, valid SQL query string. Do not include any explanations, only the query.
+    the available data fields, table relationships, and is feasible with the current database schema.
+    Include context about how tables are related and what joins will be necessary.
 
 analyze_data_task:
   description: >
-    Execute the SQL query to get the data. Then, using Python, perform a thorough
-    analysis to answer the refined question. Generate exactly ONE visualization
-    (e.g., a bar chart or line plot) to support your analysis.
+    Based on the refined question from the Business Analyst, you MUST follow this EXACT workflow:
     
-    CRITICAL CHART REQUIREMENTS:
-    - You MUST save the chart as 'output/chart.png' using matplotlib
-    - Use plt.savefig('output/chart.png') - this exact path is required
-    - Only create ONE chart per analysis to avoid conflicts
-    - The chart will be automatically displayed in the Streamlit UI
-    - Include matplotlib in your imports: import matplotlib.pyplot as plt
-    - Do NOT import or use the 'os' module - it's restricted in this environment
+    STEP 1: Execute SQL Query
+    - Use SQLExecutor(sql_query='your_query') to get data from the database
+    
+    STEP 2: IMMEDIATELY Use Code Interpreter (MANDATORY)
+    - As soon as you get SQL results, you MUST call Code Interpreter(code='your_python_code')
+    - Extract the CSV data from the SQL results
+    - Create STUNNING, DETAILED charts using matplotlib.pyplot
+    - Apply professional styling, custom colors, and engaging visual design
+    - Save charts with plt.savefig('output/chart_1.png')
+    
+    STEP 3: Provide Analysis
+    - Summarize findings in markdown format
+    - Reference the charts you created
+    
+    CRITICAL REQUIREMENTS:
+    🚨 YOU MUST CALL BOTH SQLExecutor AND Code Interpreter TOOLS 
+    🚨 NO EXCEPTIONS - Code Interpreter is REQUIRED after every SQL query
+    🚨 Charts MUST be created and saved to output/ directory
+    🚨 If you don't use Code Interpreter, NO CHARTS will appear in the UI
+    
+    WORKFLOW ENFORCEMENT:
+    - Database: NeonDB PostgreSQL - use proper PostgreSQL syntax
+    - After SQLExecutor returns results, IMMEDIATELY call Code Interpreter
+    - Use this exact pattern:
+      1. SQLExecutor(sql_query="SELECT * FROM table")
+      2. Code Interpreter(code="import pandas as pd; import matplotlib.pyplot as plt; # create charts", libraries_used=['pandas', 'matplotlib', 'numpy'])
+    
+    MANDATORY CODE INTERPRETER USAGE:
+    After getting CSV data from SQLExecutor, you must immediately call:
+    Code Interpreter(code='''
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import io
+
+    # Apply professional styling
+    plt.style.use('seaborn-v0_8')
+    colors = ['#2E86AB', '#A23B72', '#F18F01', '#C73E1D', '#3D5A80']
+
+    # Extract CSV data from SQL results (remove instruction text)
+    csv_data = """[PASTE CLEAN CSV DATA HERE]"""
+    df = pd.read_csv(io.StringIO(csv_data))
+
+    # Create STUNNING visualizations with multiple approaches
+    fig, ax = plt.subplots(figsize=(12, 8))
+    
+    # Use advanced matplotlib features:
+    # - Custom colors and gradients
+    # - Detailed annotations with insights
+    # - Professional typography and styling
+    # - Statistical overlays and trend analysis
+    # - Multiple chart types and combinations
+    
+    plt.title('Compelling Title with Key Business Insight', fontsize=18, fontweight='bold', pad=20)
+    plt.xlabel('Descriptive X-Axis Label', fontsize=14)
+    plt.ylabel('Descriptive Y-Axis Label', fontsize=14)
+    plt.grid(True, alpha=0.3, linestyle='--')
+    
+    # Add annotations, trend lines, statistical insights
+    plt.savefig('output/chart_1.png', dpi=300, bbox_inches='tight', facecolor='white')
+    plt.close()
+        ''', libraries_used=['pandas', 'matplotlib', 'numpy'])
+    CRITICAL plt.savefig() REQUIREMENTS:
+    - MANDATORY: Every chart must be saved with plt.savefig('output/filename.png')
+    - MANDATORY: Use .png format only
+    - MANDATORY: Save to 'output/' directory
+    - MANDATORY: Use plt.close() after each plt.savefig()
+    - RECOMMENDED: Use dpi=300 and bbox_inches='tight' for high quality
+    - Without plt.savefig(), charts will NOT appear in the Streamlit UI
     
     PYTHON CODE STRUCTURE:
-    1. Import required libraries (pandas, matplotlib.pyplot)
-    2. Process the data from SQL results
-    3. Create your analysis and calculations  
-    4. Generate ONE clear, professional chart
-    5. Save the chart using plt.savefig('output/chart.png')
-    6. Include a markdown table of your data
+    1. Import required libraries (pandas, matplotlib.pyplot, numpy)
+    2. Write and execute the SQL query to get data
+    3. Process the data from SQL results
+    4. Create your analysis and calculations  
+    5. Generate MULTIPLE stunning, professional charts with:
+       - Custom color palettes and professional styling
+       - Detailed annotations and insights overlaid
+       - Advanced matplotlib features (subplots, annotations, etc.)
+       - Executive-quality formatting and typography
+       - Statistical enhancements (trend lines, benchmarks, etc.)
+    6. Save charts using descriptive filenames (chart_1.png, chart_2.png, etc.)
+    7. Create a markdown table manually (do NOT use df.to_markdown() - tabulate is unavailable)
+    
+    CHART NAMING CONVENTIONS:
+    - Single chart: 'output/chart.png' OR 'output/chart_1.png' 
+    - Multiple charts: 'output/chart_1.png', 'output/chart_2.png', 'output/chart_3.png', etc.
+    - Use descriptive names if helpful: 'output/sales_trend.png', 'output/category_breakdown.png'
+    - All PNG files in output/ directory will be automatically displayed
+    
+    MARKDOWN TABLE FORMATTING:
+    - Create tables manually using this format:
+      | Column 1 | Column 2 | Column 3 |
+      |----------|----------|----------|
+      | Value 1  | Value 2  | Value 3  |
+    - Use proper alignment and spacing
+    - Include all relevant data from your analysis
+    - Format numbers appropriately (2 decimal places for currency, etc.)
     
     IMPORTANT RESTRICTIONS:
     - Do NOT use 'import os' or any os module functions
+    - Do NOT use df.to_markdown() - tabulate library is unavailable
     - Do NOT try to check file existence or directory contents
-    - Simply save the chart with plt.savefig('output/chart.png') and trust it works
+    - Simply save charts with plt.savefig() and trust it works
     - Focus on creating great visualizations, not file system operations
+    - Available libraries: pandas, numpy, matplotlib, datetime, json, re, psycopg2, sqlalchemy
+    - Unavailable libraries: tabulate, seaborn, plotly, bokeh, altair
     
     Your final output must be a markdown-formatted text containing:
     1. A summary of your key findings
     2. The data you analyzed, presented in a markdown table
-    3. Reference to the chart: "Chart saved as output/chart.png"
+    3. Reference to the charts created (e.g., "Charts saved as chart_1.png and chart_2.png")
+    4. CONFIRMATION that charts were actually created using Code Interpreter
+    5. When referencing charts in markdown text, use just filename (e.g., chart_1.png) since markdown and images are in same output/ directory
   expected_output: >
     A comprehensive analysis in markdown format, including a summary, a markdown table
-    of the data, and confirmation that the chart was saved to 'output/chart.png'.
+    of the data, confirmation of which charts were created, and evidence that Code Interpreter was used for chart generation (e.g., "Charts saved as chart_1.png and chart_2.png").
 
 generate_report_task:
   description: >

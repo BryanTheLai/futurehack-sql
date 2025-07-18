@@ -98,7 +98,38 @@ Follow these steps to set up and run CogniQuery on your local machine.
     ```
     *Note: You can also leave these blank and enter them directly in the Streamlit UI sidebar.*
 
-5.  **Run the Application:**
+5.  **🗄️ Set Up Sample Dataset (Optional):**
+    
+    **Quick Start - Load Sample E-commerce Data:**
+    
+    We've included a sample dataset with an interesting business problem hidden inside! To get started quickly:
+    
+    **Option 1: Automatic Setup (Recommended)**
+    ```bash
+    # Run the Python setup script
+    python scripts/setup_dataset.py
+    ```
+    This will automatically load the sample data into your configured database.
+    
+    **Option 2: Manual Setup**
+    ```bash
+    # Connect to your database and run the setup script manually
+    psql "your_connection_string_here" -f scripts/dataset.sql
+    ```
+    
+    **What's in the sample dataset?**
+    - **4 tables:** `orders`, `products`, `customers`, `regions`
+    - **Real business scenario:** E-commerce data with sales, profit, and discount information
+    - **Hidden problem:** There's a specific regional performance issue waiting to be discovered!
+    
+    **Try these sample queries once your data is loaded:**
+    - *"Our profit in Southeast Asia is a disaster. Find the top 3 sub-categories that are losing the most money in that region."*
+    - *"Show me the relationship between discount levels and profitability across all regions."*
+    - *"Which customer segment is most profitable and why?"*
+    
+    **Don't want to set up the sample data?** No problem! CogniQuery works with any PostgreSQL database. Just connect to your existing database and start asking questions.
+
+6.  **Run the Application:**
     ```bash
     streamlit run app.py
     ```
