@@ -3,9 +3,9 @@
 import os
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
-from crewai_tools import CodeInterpreterTool
 
 from .tools.schema_explorer_tool import SchemaExplorerTool
+from .tools.local_code_executor import LocalCodeExecutorTool
 from .tools.sample_data_tool import SampleDataTool
 from .tools.sql_executor_tool import SQLExecutorTool
 from .tools.reporting_tools import ReportingTools
@@ -30,7 +30,7 @@ class CogniQueryCrew():
         self.sample_data_tool = SampleDataTool()
         self.sql_executor_tool = SQLExecutorTool()
         self.report_tool = ReportingTools()
-        self.code_interpreter_tool = CodeInterpreterTool()
+        self.local_code_executor = LocalCodeExecutorTool()
         
         # Configure all database tools with the connection string
         for tool in [self.schema_tool, self.sample_data_tool, self.sql_executor_tool]:
@@ -53,7 +53,7 @@ class CogniQueryCrew():
     def data_analyst(self) -> Agent:
         return Agent(
             config=self.agents_config['data_analyst'],
-            tools=[self.schema_tool, self.sample_data_tool, self.sql_executor_tool, self.code_interpreter_tool],
+            tools=[self.schema_tool, self.sample_data_tool, self.sql_executor_tool, self.local_code_executor],
             verbose=True,
             allow_delegation=False
         )
