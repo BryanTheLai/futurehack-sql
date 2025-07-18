@@ -1,43 +1,44 @@
+# CogniQuery 🤖 — AI-Powered Data Insights
 
-# CogniQuery 🤖 - Your AI Data Scientist
+*Submission for FutureHack! A.I. Battlefield Hackathon*
 
-*Submission for the FutureHack! A.I. Battlefield Hackathon*
-
-[![Hackathon](https://img.shields.io/badge/FutureHack!-A.I.Battlefield-blueviolet)](https://www.futurehack.dev/)
-[![Python](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org/)
-[![Framework](https://img.shields.io/badge/Framework-crewai-orange)](https://www.crewai.com/)
+[![Hackathon](https://img.shields.io/badge/FutureHack!-A.I.Battlefield-blueviolet)](https://www.futurehack.dev/)  
+[![Python](https://img.shields.io/badge/Python-3.9%2B-blue)](https://www.python.org/)  
+[![Framework](https://img.shields.io/badge/Framework-crewai-orange)](https://www.crewai.com/)  
 [![UI](https://img.shields.io/badge/UI-Streamlit-red)](https://streamlit.io/)
 
-CogniQuery transforms complex business questions into comprehensive data reports, empowering non-technical users to unlock insights from their databases instantly. We achieve this through a sophisticated multi-agent AI system that simulates an entire data analytics team, from initial query to final visualization.
+CogniQuery empowers anyone to turn complex business questions into actionable data reports—no SQL required. Our advanced multi-agent AI system simulates a full analytics team, guiding every step from the initial question to final visualization.
+
+![Entity Relationship Diagram](https://github.com/BryanTheLai/futurehack-sql/blob/main/images/futurehack-erd.png?raw=true)
 
 ---
 
-### 🎥 **Video Walkthrough**
+### 🎥 Demo Video
 
-**[Click here to watch the full demo of CogniQuery in action!](https://your-video-link-here.com)**
+**[Watch the full CogniQuery walkthrough here](https://your-video-link-here.com)**
 
-*Due to the resource-intensive nature of our multi-agent system, this video provides a smooth and reliable demonstration of our fully functional application.*
+*This video highlights the seamless performance of our multi-agent system, providing a reliable look at our app’s capabilities.*
 
-![CogniQuery UI Screenshot](https://raw.githubusercontent.com/wbryanteoh/futurehack-sql/main/screenshot.png)
-*(Replace this link with a direct link to a screenshot of your app in your repo)*
-
----
-
-### ✨ Key Features
-
--   **Agentic AI Workflow:** Powered by `crewai`, our system uses specialized AI agents (Analyst, DBA, Scientist, Strategist) that collaborate to solve problems, ensuring more robust and context-aware results than simple text-to-SQL.
--   **Natural Language to Insight:** Go from a simple question like "How did we do last month?" to a full report with charts and analysis in seconds.
--   **Automated Visualizations:** The AI Data Scientist automatically generates the most relevant chart (e.g., bar, line) to visually support the findings.
--   **Transparent Activity Log:** Watch your AI team work in real-time! Our live log shows every thought process, SQL query, and Python script as it happens, building trust and providing full transparency.
--   **Bring-Your-Own-Database (BYOD):** Securely connect to your own NeonDB-compatible database via the UI. Your data stays yours.
+![App UI Screenshot](https://raw.githubusercontent.com/wbryanteoh/futurehack-sql/main/screenshot.png)  
+*(Tip: Replace this link with a screenshot from your own repo!)*
 
 ---
 
-### 🧠 Architectural Deep-Dive: The AI Team Workflow
+### ✨ Features at a Glance
 
-CogniQuery's power lies in its structured, sequential agentic process. Each agent has a specific role and hands off its work to the next, mimicking a real-world, high-performance data team.
+- **Agentic AI Workflow:** Powered by `crewai`, CogniQuery uses specialized AI agents (Analyst, DBA, Scientist, Strategist) collaborating for more accurate and meaningful results than traditional text-to-SQL.
+- **Ask in Plain English:** Simply ask questions like “How did we do last month?” and get a complete report with charts in seconds.
+- **Smart Visualizations:** Automatically generates the right chart type to illuminate your data.
+- **Live Activity Log:** See your AI team’s thought process, SQL queries, and scripts in real time—building transparency and trust.
+- **Bring Your Own Database:** Securely connect to your own NeonDB-compatible database. Your data stays private.
 
-This diagram illustrates the flow of information and the collaboration between the AI agents:
+---
+
+### 🧠 Architecture: How the AI Team Works
+
+CogniQuery’s strength lies in its structured, sequential agent workflow. Each agent has a distinct responsibility and hands off to the next, just like a high-performing analytics team.
+
+Here’s a look at the information flow and agent collaboration:
 
 ![AI Team Workflow Diagram](https://raw.githubusercontent.com/BryanTheLai/futurehack-sql/main/images/graphviz.png)
 
@@ -45,63 +46,65 @@ This diagram illustrates the flow of information and the collaboration between t
 
 ### 💻 Tech Stack
 
-| Category      | Technology                                                                                                                                                                                          |
-|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **AI Agents**   | ![CrewAI](https://img.shields.io/badge/crewAI-Framework-orange) ![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4-42b38f) ![Gemini](https://img.shields.io/badge/Google-Gemini_Pro-4285F4)    |
-| **Frontend**  | ![Streamlit](https://img.shields.io/badge/Streamlit-UI-ff4b4b)                                                                                                                                      |
-| **Database**  | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-NeonDB-336791)                                                                                                                                |
-| **Data Tools**| ![Pandas](https://img.shields.io/badge/Pandas-Library-150458) ![Matplotlib](https://img.shields.io/badge/Matplotlib-Library-8a2be2)                                                                     |
+| Category      | Technology                                                                                                                                                                                                |
+|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **AI Agents** | ![CrewAI](https://img.shields.io/badge/crewAI-Framework-orange) ![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4-42b38f) ![Gemini](https://img.shields.io/badge/Google-Gemini_Pro-4285F4)             |
+| **Frontend**  | ![Streamlit](https://img.shields.io/badge/Streamlit-UI-ff4b4b)                                                                                                                                            |
+| **Database**  | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-NeonDB-336791)                                                                                                                                      |
+| **Data Tools**| ![Pandas](https://img.shields.io/badge/Pandas-Library-150458) ![Matplotlib](https://img.shields.io/badge/Matplotlib-Library-8a2be2)                                                                       |
 
 ---
 
-### 🛠️ How to Run Locally
+### 🛠️ Getting Started
 
-Follow these steps to set up and run CogniQuery on your local machine.
+Run CogniQuery locally in just a few steps:
 
-1.  **Clone the Repository:**
+1. **Clone this repository:**
     ```bash
     git clone https://github.com/your-username/your-repo-name.git
     cd your-repo-name
     ```
 
-2.  **Create and Activate a Virtual Environment:**
-    *   **Windows:**
+2. **Set up your Python environment:**
+    - **Windows:**
         ```bash
         python -m venv .venv
         .\.venv\Scripts\activate
         ```
-    *   **macOS / Linux:**
+    - **macOS / Linux:**
         ```bash
         python3 -m venv .venv
         source .venv/bin/activate
         ```
 
-3.  **Install Dependencies:**
+3. **Install project dependencies:**
     ```bash
     pip install -r requirements.txt
     ```
 
-4.  **Configure Environment Variables:**
-    Create a file named `.env` in the root directory by copying the example file:
+4. **Configure environment variables:**
+    Copy the example file and add your keys:
     ```bash
-    # For Windows
+    # Windows
     copy .env.example .env
 
-    # For macOS / Linux
+    # macOS / Linux
     cp .env.example .env
     ```
-    Now, open the `.env` file and add your credentials:
+    Then edit `.env`:
     ```env
     OPENAI_API_KEY="sk-..."
     GEMINI_API_KEY="..."
     NEONDB_CONN_STR="postgresql://user:password@host:port/dbname"
     ```
-    *Note: You can also leave these blank and enter them directly in the Streamlit UI sidebar.*
+    *Or enter these directly in the app sidebar.*
 
-5.  **Run the Application:**
+5. **Launch the app:**
     ```bash
     streamlit run app.py
     ```
-    Your browser should open to the CogniQuery application automatically.
+    Your browser will launch CogniQuery automatically!
 
-```
+---
+
+Let me know if you want any further customization or adjustments!
