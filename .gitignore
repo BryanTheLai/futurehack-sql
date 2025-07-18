@@ -26,3 +26,7 @@ env/
 output/
 *.pdf
 *.png
+
+
+code_scraper.py
+consolidated_code.md

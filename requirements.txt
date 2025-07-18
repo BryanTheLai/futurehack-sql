@@ -10,3 +10,4 @@ pandas
 matplotlib
 weasyprint
 markdown-it-py
+reportlab
