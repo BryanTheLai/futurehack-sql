@@ -1,0 +1,29 @@
+# .gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+*.egg
+
+# Virtual Environment
+.venv/
+venv/
+env/
+
+# IDE specific
+.vscode/
+.idea/
+
+# Secrets
+.env*
+!/.env.example
+
+# Output files
+output/
+*.pdf
+*.md
+*.png

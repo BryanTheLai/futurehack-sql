@@ -1,0 +1,38 @@
+# src/cogniquery_crew/config/tasks.yaml
+
+enhance_prompt_task:
+  description: >
+    Take the user's query: '{query}' and refine it into a single, highly detailed,
+    and specific question that is ready for data analysis. The question must be
+    self-contained and unambiguous.
+  expected_output: >
+    A single, refined, and detailed question in plain English.
+
+generate_sql_task:
+  description: >
+    Based on the refined question, write a single, syntactically correct SQL query
+    to retrieve the necessary data. Use the provided database schema to ensure all
+    table and column names are correct.
+  expected_output: >
+    A single, valid SQL query string. Do not include any explanations, only the query.
+
+analyze_data_task:
+  description: >
+    Execute the SQL query to get the data. Then, using Python, perform a thorough
+    analysis to answer the refined question. Generate at least one visualization
+    (e.g., a bar chart or line plot) to support your analysis.
+    Save any generated charts as 'output/chart.png'.
+    Your final output must be a markdown-formatted text containing:
+    1. A summary of your key findings.
+    2. The data you analyzed, presented in a markdown table.
+    3. An embed of the chart you created using the path 'output/chart.png'.
+  expected_output: >
+    A comprehensive analysis in a markdown string, including a summary, a markdown table
+    of the data, and an embedded image tag for the chart like this: '![Chart](output/chart.png)'.
+
+generate_report_task:
+  description: >
+    Take the markdown-formatted analysis and insights and compile them into a final,
+    professional report.
+  expected_output: >
+    A confirmation message that the PDF report has been successfully created.

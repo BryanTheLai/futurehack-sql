@@ -1,0 +1,12 @@
+# requirements.txt
+
+crewai
+crewai-tools
+openai
+streamlit
+python-dotenv
+psycopg2-binary
+pandas
+matplotlib
+weasyprint
+markdown-it-py
