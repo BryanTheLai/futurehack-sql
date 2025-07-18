@@ -4,6 +4,7 @@ import os
 import base64
 from crewai.tools import BaseTool
 from markdown_it import MarkdownIt
+from .activity_logger import get_activity_logger
 
 class ReportingTools(BaseTool):
     name: str = "Reporting Tools"
@@ -14,6 +15,9 @@ class ReportingTools(BaseTool):
         Converts markdown content, including images and tables, into a PDF report.
         It saves the report to the specified file path.
         """
+        logger = get_activity_logger()
+        logger.log_tool_usage("Communications Strategist", "Reporting Tools", f"Creating PDF report at {report_file_path}")
+        
         # Ensure the output directory exists
         output_dir = os.path.dirname(report_file_path)
         if not os.path.exists(output_dir):
@@ -27,7 +31,9 @@ class ReportingTools(BaseTool):
         try:
             from weasyprint import HTML, CSS
         except (ImportError, OSError) as e:
-            return f"WeasyPrint import error: {e}. Please install WeasyPrint and its native dependencies as per https://doc.courtbouillon.org/weasyprint/stable/first_steps.html."
+            error_msg = f"WeasyPrint import error: {e}. Please install WeasyPrint and its native dependencies as per https://doc.courtbouillon.org/weasyprint/stable/first_steps.html."
+            logger.log_tool_usage("Communications Strategist", "Reporting Tools", f"PDF creation failed: {error_msg}")
+            return error_msg
 
         # Basic CSS for styling
         css = CSS(string='''
@@ -43,9 +49,13 @@ class ReportingTools(BaseTool):
         # Create PDF
         try:
             HTML(string=html_content).write_pdf(report_file_path, stylesheets=[css])
-            return f"Successfully created report at {report_file_path}"
+            success_msg = f"Successfully created report at {report_file_path}"
+            logger.log_tool_usage("Communications Strategist", "Reporting Tools", success_msg)
+            return success_msg
         except Exception as e:
-            return f"Error creating PDF report: {e}"
+            error_msg = f"Error creating PDF report: {e}"
+            logger.log_tool_usage("Communications Strategist", "Reporting Tools", error_msg)
+            return error_msg
 
     def _run(self, markdown_content: str, report_file_path: str = None, **kwargs) -> str:
         """

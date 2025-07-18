@@ -8,6 +8,7 @@ load_dotenv()
 import psycopg2
 import pandas as pd
 from crewai.tools import BaseTool
+from .activity_logger import get_activity_logger
 
 class DatabaseTools(BaseTool):
     name: str = "Database Tools"
@@ -35,14 +36,24 @@ class DatabaseTools(BaseTool):
         Returns the schema of the database as a string.
         The schema includes table names and their respective columns.
         """
+        logger = get_activity_logger()
         query = """
         SELECT table_name, column_name, data_type 
         FROM information_schema.columns 
         WHERE table_schema = 'public';
         """
+        
+        # Determine which agent is calling this (could be Business Analyst or SQL Generator)
+        current_status = logger.get_current_status()
+        current_agent = current_status.get('current_agent', 'Unknown Agent')
+        
+        logger.log_tool_usage(current_agent, "Database Tools", f"Getting database schema")
+        logger.log_sql_query(current_agent, query)
+        
         schema_df = self._execute_query(query, db_connection_string)
         
         if isinstance(schema_df, str): # Error occurred
+            logger.log_tool_usage(current_agent, "Database Tools", f"Schema query failed: {schema_df}")
             return schema_df
 
         schema_str = "Database Schema:\n"
@@ -51,6 +62,8 @@ class DatabaseTools(BaseTool):
             columns = schema_df[schema_df['table_name'] == table]
             for _, col in columns.iterrows():
                 schema_str += f"  - {col['column_name']} ({col['data_type']})\n"
+        
+        logger.log_tool_usage(current_agent, "Database Tools", f"Retrieved schema for {len(schema_df['table_name'].unique())} tables")
         return schema_str
 
     def run_sql_query(self, sql_query: str, db_connection_string: str | None = None) -> str:
@@ -59,12 +72,27 @@ class DatabaseTools(BaseTool):
         as a CSV formatted string.
         If the query fails, it returns the error message.
         """
+        logger = get_activity_logger()
+        
+        # Log the SQL query being executed
+        logger.log_sql_query("Data Analyst", sql_query)
+        logger.log_tool_usage("Data Analyst", "Database Tools", f"Executing SQL query")
+        
         result_df = self._execute_query(sql_query, db_connection_string)
         
         if isinstance(result_df, str): # Error occurred
+            logger.log_tool_usage("Data Analyst", "Database Tools", f"Query failed: {result_df}")
             return result_df
-            
-        return result_df.to_csv(index=False)
+        
+        # Log successful execution with result preview
+        result_csv = result_df.to_csv(index=False)
+        result_preview = f"Query returned {len(result_df)} rows"
+        if len(result_df) > 0:
+            result_preview += f". Sample data:\n{result_df.head(3).to_string()}"
+        
+        logger.log_tool_usage("Data Analyst", "Database Tools", f"Query executed successfully: {result_preview}")
+        
+        return result_csv
     
     def _run(self, sql_query: str, **kwargs) -> str:
         """

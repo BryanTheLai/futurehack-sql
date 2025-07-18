@@ -3,10 +3,14 @@
 enhance_prompt_task:
   description: >
     Take the user's query: '{query}' and refine it into a single, highly detailed,
-    and specific question that is ready for data analysis. The question must be
-    self-contained and unambiguous.
+    and specific question that is ready for data analysis. First, examine the database
+    schema using the available tools to understand what tables, columns, and data types
+    are available. Then refine the user's query to be specific about which data fields
+    should be analyzed, ensuring the question is feasible with the available data structure.
+    The question must be self-contained and unambiguous.
   expected_output: >
-    A single, refined, and detailed question in plain English.
+    A single, refined, and detailed question in plain English that specifically references
+    the available data fields and is feasible with the current database schema.
 
 generate_sql_task:
   description: >
@@ -21,7 +25,12 @@ analyze_data_task:
     Execute the SQL query to get the data. Then, using Python, perform a thorough
     analysis to answer the refined question. Generate at least one visualization
     (e.g., a bar chart or line plot) to support your analysis.
-    Save any generated charts as 'output/chart.png'.
+    IMPORTANT: You MUST save any generated charts as 'output/chart.png' using matplotlib.
+    Use the exact path 'output/chart.png' when saving with plt.savefig().
+    Make sure to include matplotlib in your libraries_used parameter.
+    Ensure your Python code includes: import matplotlib.pyplot as plt and plt.savefig('output/chart.png')
+    When using the Code Interpreter tool, explain what code you're about to run
+    before executing it.
     Your final output must be a markdown-formatted text containing:
     1. A summary of your key findings.
     2. The data you analyzed, presented in a markdown table.
