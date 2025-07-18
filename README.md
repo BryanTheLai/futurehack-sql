@@ -39,63 +39,7 @@ CogniQuery's power lies in its structured, sequential agentic process. Each agen
 
 This diagram illustrates the flow of information and the collaboration between the AI agents:
 
-```graphviz
-digraph CogniQueryFlow {
-    rankdir=TB;
-    splines=ortho;
-    node [shape=box, style="rounded,filled", fontname="Arial"];
-
-    subgraph cluster_user {
-        label="User Interaction";
-        style=filled;
-        color=lightgrey;
-        node [fillcolor=white];
-        UserQuery [label="User's Question\n(e.g., 'What were our sales by region?')", shape=ellipse];
-    }
-
-    subgraph cluster_agents {
-        label="CogniQuery AI Agent Crew";
-        style=filled;
-        color=lightblue;
-        node [fillcolor=white];
-        PromptEnhancer [label="🧠 Business Analyst\nRefines question using DB schema"];
-        SQLGenerator [label="✍️ Database Admin\nWrites optimized SQL"];
-        DataAnalyst [label="📊 Data Scientist\nAnalyzes data & creates chart"];
-        ReportGenerator [label="🗣️ Comms Strategist\nBuilds final report"];
-    }
-    
-    subgraph cluster_tools {
-        label="Tools & Data";
-        style=filled;
-        color=lightyellow;
-        node [fillcolor=white];
-        DBSchema [label="Database Schema", shape=cylinder];
-        DBTools [label="SQL Query Tool", shape=cylinder];
-        CodeInterpreter [label="Python Interpreter\n(pandas, matplotlib)", shape=cylinder];
-    }
-
-    subgraph cluster_output {
-        label="Final Output";
-        style=filled;
-        color=palegreen;
-        node [fillcolor=white];
-        FinalReport [label="Final Markdown Report\nwith embedded chart", shape=document];
-    }
-
-    # Connections
-    UserQuery -> PromptEnhancer;
-    PromptEnhancer -> DBSchema [label="1. Fetches schema"];
-    DBSchema -> PromptEnhancer;
-    PromptEnhancer -> SQLGenerator [label="2. Sends refined, schema-aware query"];
-    SQLGenerator -> DataAnalyst [label="3. Sends optimized SQL query"];
-    DataAnalyst -> DBTools [label="4. Executes SQL"];
-    DBTools -> DataAnalyst;
-    DataAnalyst -> CodeInterpreter [label="5. Runs Python analysis & viz code"];
-    CodeInterpreter -> DataAnalyst;
-    DataAnalyst -> ReportGenerator [label="6. Sends findings & chart path"];
-    ReportGenerator -> FinalReport [label="7. Compiles & delivers report"];
-}
-```
+![AI Team Workflow Diagram](https://raw.githubusercontent.com/BryanTheLai/futurehack-sql/main/images/graphviz.png)
 
 ---
 
