@@ -16,14 +16,26 @@ os.makedirs("output", exist_ok=True)
 def cleanup_output_files():
     """Removes generated files from the output directory to keep it clean."""
     # Clean generated files from output directory
-    if os.path.exists("output/chart.png"):
-        os.remove("output/chart.png")
-    if os.path.exists("output/final_report.md"):
-        os.remove("output/final_report.md")
-    if os.path.exists("output/final_report.pdf"):
-        os.remove("output/final_report.pdf")
-    if os.path.exists("output/activity_log.json"):
-        os.remove("output/activity_log.json")
+    file_patterns = ["chart.png", "final_report.md", "final_report.pdf", "activity_log.json"]
+    
+    for pattern in file_patterns:
+        file_path = f"output/{pattern}"
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+                print(f"Cleaned up: {file_path}")
+            except Exception as e:
+                print(f"Could not remove {file_path}: {e}")
+    
+    # Also remove any other PNG files that might have been created
+    if os.path.exists("output"):
+        for file in os.listdir("output"):
+            if file.endswith('.png'):
+                try:
+                    os.remove(f"output/{file}")
+                    print(f"Cleaned up chart file: {file}")
+                except Exception as e:
+                    print(f"Could not remove chart file {file}: {e}")
 
 def display_activity_log():
     """Display the current activity log in the UI."""
@@ -118,17 +130,20 @@ st.write(
 
 # --- User Inputs ---
 st.sidebar.header("Configuration")
-# Key inputs default from .env
+# Key inputs - no default values shown, but env vars used as fallback
 openai_api_key = st.sidebar.text_input(
-    "OpenAI API Key", type="password", value=os.getenv("OPENAI_API_KEY", "")
+    "OpenAI API Key", 
+    type="password", 
+    placeholder="Enter your OpenAI API key (optional if set in .env)"
 )
 gemini_api_key = st.sidebar.text_input(
-    "Gemini API Key", type="password", value=os.getenv("GEMINI_API_KEY", "")
+    "Gemini API Key", 
+    type="password", 
+    placeholder="Enter your Gemini API key (optional if set in .env)"
 )
 db_connection_string = st.sidebar.text_input(
     "NeonDB Connection String",
-    placeholder="postgresql://user:password@host:port/dbname",
-    value=os.getenv("NEONDB_CONN_STR", "")
+    placeholder="postgresql://user:password@host:port/dbname (optional if set in .env)"
 )
 
 st.header("Ask Your Data a Question")
@@ -139,13 +154,18 @@ query = st.text_area(
 )
 
 if st.button("Generate Report"):
-    if not openai_api_key or not gemini_api_key or not db_connection_string or not query:
+    # Use user inputs or fall back to environment variables
+    final_openai_key = openai_api_key.strip() or os.getenv("OPENAI_API_KEY", "")
+    final_gemini_key = gemini_api_key.strip() or os.getenv("GEMINI_API_KEY", "")
+    final_db_conn = db_connection_string.strip() or os.getenv("NEONDB_CONN_STR", "")
+    
+    if not final_openai_key or not final_gemini_key or not final_db_conn or not query:
         st.error("Please provide all required inputs: OpenAI Key, Gemini Key, DB Connection String, and your query.")
     else:
         # Set the API key for the current process
-        os.environ["OPENAI_API_KEY"] = openai_api_key
-        os.environ["GEMINI_API_KEY"] = gemini_api_key
-        os.environ["NEONDB_CONN_STR"] = db_connection_string
+        os.environ["OPENAI_API_KEY"] = final_openai_key
+        os.environ["GEMINI_API_KEY"] = final_gemini_key
+        os.environ["NEONDB_CONN_STR"] = final_db_conn
         
         # Clean up old files before running
         cleanup_output_files()
@@ -199,8 +219,9 @@ if st.button("Generate Report"):
             st.subheader("📊 Generated Analysis Report")
             st.markdown(result[0].raw, unsafe_allow_html=True)
             
-            # Display chart image if generated
+            # Display chart image with improved detection
             chart_path = "output/chart.png"
+            chart_abs_path = os.path.abspath(chart_path)
             
             # Debug: List all files in output directory
             try:
@@ -209,12 +230,39 @@ if st.button("Generate Report"):
             except Exception as e:
                 st.write(f"📁 Could not list output directory: {e}")
             
+            # Check for chart with multiple approaches
+            chart_found = False
             if os.path.exists(chart_path):
-                st.subheader("📈 Generated Chart")
-                st.image(chart_path, caption="Analysis Chart", use_column_width=True)
-            else:
-                st.warning("⚠️ Chart was not generated. Check the activity log for Python code execution details.")
-                st.write(f"Looking for chart at: {os.path.abspath(chart_path)}")
+                try:
+                    st.subheader("📈 Generated Chart")
+                    st.image(chart_path, caption="Analysis Chart", use_column_width=True)
+                    chart_found = True
+                    st.success("✅ Chart displayed successfully!")
+                except Exception as e:
+                    st.error(f"❌ Error displaying chart: {e}")
+            
+            if not chart_found:
+                # Alternative chart detection
+                chart_files = [f for f in os.listdir("output") if f.endswith('.png')]
+                if chart_files:
+                    chart_file = chart_files[0]  # Use first PNG found
+                    try:
+                        st.subheader("📈 Generated Chart")
+                        st.image(f"output/{chart_file}", caption="Analysis Chart", use_column_width=True)
+                        st.info(f"📊 Found and displayed chart: {chart_file}")
+                        chart_found = True
+                    except Exception as e:
+                        st.error(f"❌ Error displaying alternative chart: {e}")
+                
+                if not chart_found:
+                    st.warning("⚠️ Chart was not generated or could not be found. Check the activity log for details.")
+                    st.write(f"Expected chart location: {chart_abs_path}")
+                    st.write(f"Chart exists check: {os.path.exists(chart_path)}")
+                    if os.path.exists("output"):
+                        output_contents = os.listdir("output")
+                        st.write(f"Output directory contents: {output_contents}")
+                    else:
+                        st.write("Output directory does not exist")
 
         except Exception as e:
             with status_placeholder:
@@ -230,5 +278,7 @@ st.sidebar.info(
     "3. **Data Scientist:** Runs the query and creates charts.\n"
     "4. **Communications Strategist:** Compiles the final report.\n\n"
     "**🔍 Activity Log:** Watch the agents work in real-time! "
-    "You'll see all SQL queries, tool usage, and progress updates as they happen."
+    "You'll see all SQL queries, tool usage, and progress updates as they happen.\n\n"
+    "**💡 Configuration:** API keys and DB connection can be set in .env file "
+    "or entered above. Values entered above will override .env settings."
 )

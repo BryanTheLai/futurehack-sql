@@ -3,7 +3,6 @@
 import os
 from crewai import Agent, Crew, Process, Task
 from crewai.project import CrewBase, agent, crew, task
-from langchain_openai import ChatOpenAI
 
 from .tools.db_tools import DatabaseTools
 from .tools.reporting_tools import ReportingTools
