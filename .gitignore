@@ -25,7 +25,6 @@ env/
 # Output files
 output/
 *.pdf
-*.png
 
 
 code_scraper.py
