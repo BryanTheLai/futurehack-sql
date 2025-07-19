@@ -9,6 +9,7 @@ from slack_bolt.adapter.socket_mode import SocketModeHandler
 
 from src.cogniquery_crew.crew import CogniQueryCrew
 from src.cogniquery_crew.tools.reporting_tools import ReportingTools
+from src.cogniquery_crew.tools.pdf_generator import EnhancedPDFGenerator, TLDRExtractor
 
 # Load environment variables from .env file
 load_dotenv()
@@ -40,28 +41,84 @@ def run_cogniquery_and_reply(query: str, channel_id: str, client):
         with open(markdown_report_path, 'r', encoding='utf-8') as f:
             markdown_content = f.read()
 
-        # 3. Convert the markdown report to a PDF
-        reporting_tool = ReportingTools()
-        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        pdf_report_path = f"output/CogniQuery_Report_{timestamp}.pdf"
+        # 3. Extract TLDR for immediate Slack message
+        tldr_extractor = TLDRExtractor()
+        tldr_content = tldr_extractor.extract_tldr(markdown_content)
         
-        pdf_creation_result = reporting_tool.create_report(
-            markdown_content=markdown_content,
-            report_file_path=pdf_report_path
-        )
-        print(f"📄 PDF Creation Result: {pdf_creation_result}")
+        # 4. Find chart files for PDF embedding
+        pdf_generator = EnhancedPDFGenerator()
+        chart_files = pdf_generator.get_chart_files()
+        print(f"📊 Found {len(chart_files)} chart files: {chart_files}")
 
+        # 5. Send TLDR as a rich Slack message first
+        if tldr_content:
+            # Create a rich Slack message with the TLDR
+            tldr_blocks = [
+                {
+                    "type": "section",
+                    "text": {
+                        "type": "mrkdwn",
+                        "text": f"🤖 *CogniQuery Analysis Complete!*\n\n*Quick Summary:*\n{tldr_content}"
+                    }
+                },
+                {
+                    "type": "context",
+                    "elements": [
+                        {
+                            "type": "mrkdwn",
+                            "text": f"📊 Generated {len(chart_files)} charts • 📄 Full PDF report attached below"
+                        }
+                    ]
+                }
+            ]
+            
+            # Send the TLDR message
+            client.chat_postMessage(
+                channel=channel_id,
+                text=f"Analysis complete for: '{query}'",  # Fallback text
+                blocks=tldr_blocks
+            )
+            print(f"📨 Sent TLDR message to channel {channel_id}")
+
+        # 6. Create enhanced PDF with embedded images and proper tables
+        try:
+            pdf_bytes = pdf_generator.create_pdf(markdown_content, chart_files)
+            
+            # Save PDF to file for upload
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            pdf_report_path = f"output/CogniQuery_Report_{timestamp}.pdf"
+            
+            with open(pdf_report_path, 'wb') as f:
+                f.write(pdf_bytes)
+                
+            print(f"📄 Enhanced PDF created: {pdf_report_path}")
+            
+        except Exception as pdf_error:
+            # Fallback to basic PDF if enhanced version fails
+            print(f"⚠️ Enhanced PDF generation failed: {pdf_error}")
+            print("🔄 Falling back to basic PDF generation...")
+            
+            reporting_tool = ReportingTools()
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            pdf_report_path = f"output/CogniQuery_Report_{timestamp}.pdf"
+            
+            pdf_creation_result = reporting_tool.create_report(
+                markdown_content=markdown_content,
+                report_file_path=pdf_report_path
+            )
+            print(f"📄 Basic PDF Creation Result: {pdf_creation_result}")
+
+        # 7. Upload the PDF report to the Slack channel
         if not os.path.exists(pdf_report_path):
-             raise FileNotFoundError(f"PDF generation failed. Tool message: {pdf_creation_result}")
+            raise FileNotFoundError(f"PDF generation failed completely.")
 
-        # 4. Upload the PDF report to the Slack channel
         client.files_upload_v2(
             channel=channel_id,
             file=pdf_report_path,
-            title=f"CogniQuery Analysis for: '{query}'",
-            initial_comment="Here is the detailed analysis you requested. The report includes key findings and data visualizations.",
+            title=f"CogniQuery Analysis Report: '{query}'",
+            initial_comment="📊 Here's your detailed analysis report with charts and insights.",
         )
-        print(f"🎉 Successfully uploaded report to channel {channel_id}")
+        print(f"🎉 Successfully uploaded PDF report to channel {channel_id}")
 
     except Exception as e:
         print(f"❌ An error occurred: {e}")
@@ -104,8 +161,30 @@ def handle_app_mention_events(body: dict, say, client):
         say("Hi! Please provide a question about your data after mentioning me. For example: `@CogniQuery Bot What are our top selling products?`")
         return
 
-    # Acknowledge the request immediately to avoid Slack timeout errors
-    say(f"On it! I'm analyzing your request: *'{query}'*... This might take a minute.")
+    # Acknowledge the request immediately with a richer message
+    acknowledge_blocks = [
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"🚀 *Got it!* I'm analyzing your request:\n\n*\"{query}\"*"
+            }
+        },
+        {
+            "type": "context",
+            "elements": [
+                {
+                    "type": "mrkdwn",
+                    "text": "⏱️ This usually takes 1-2 minutes • 📊 I'll create charts and insights • 📄 Full PDF report will be attached"
+                }
+            ]
+        }
+    ]
+    
+    say(
+        text=f"Analyzing: '{query}'...",  # Fallback text
+        blocks=acknowledge_blocks
+    )
 
     # Run the intensive crew process in a separate thread
     thread = threading.Thread(
