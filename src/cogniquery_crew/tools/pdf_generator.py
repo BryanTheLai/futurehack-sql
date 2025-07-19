@@ -75,7 +75,20 @@ class EnhancedPDFGenerator:
             # Make a copy of the markdown content to avoid modifying the original
             pdf_content = markdown_content
 
-            # --- 1. Find chart references and replace with Base64 embedded images ---
+            # --- 1. Convert Markdown to HTML first (preserving image references) ---
+            try:
+                # Use the "default" preset which includes table support
+                md = MarkdownIt("default", {"html": True})
+                html_content = md.render(pdf_content)
+            except:
+                # Fallback to basic MarkdownIt with manual table processing
+                md = MarkdownIt()
+                html_content = md.render(pdf_content)
+            
+            # --- 2. Process tables for better formatting ---
+            html_content = self._enhance_table_html(html_content)
+
+            # --- 3. Replace image references with Base64 embedded images in HTML ---
             for chart_file in chart_files:
                 chart_path = os.path.join(self.output_dir, chart_file)
                 if os.path.exists(chart_path):
@@ -88,19 +101,20 @@ class EnhancedPDFGenerator:
                         # Create the HTML img tag with embedded data
                         img_tag = f'<img src="data:image/png;base64,{base64_image}" alt="{chart_file}" style="max-width: 100%; height: auto; margin: 20px auto; display: block;">'
                         
-                        # Replace various possible markdown image references
+                        # Replace HTML img tags that were created from markdown
                         chart_name = chart_file.split('.')[0]
-                        pdf_content = pdf_content.replace(f"![{chart_name}]({chart_file})", img_tag)
-                        pdf_content = pdf_content.replace(f"![Chart]({chart_file})", img_tag)
-                        pdf_content = pdf_content.replace(f"![chart]({chart_file})", img_tag)
-                        pdf_content = pdf_content.replace(chart_file, img_tag)
+                        # Replace various possible HTML image references
+                        html_content = html_content.replace(f'<img src="{chart_file}"', f'<img src="data:image/png;base64,{base64_image}"')
+                        html_content = html_content.replace(f'src="{chart_file}"', f'src="data:image/png;base64,{base64_image}"')
+                        html_content = html_content.replace(f'src="output/{chart_file}"', f'src="data:image/png;base64,{base64_image}"')
+                        
+                        # Also handle cases where markdown didn't convert properly
+                        html_content = html_content.replace(f"![{chart_name}]({chart_file})", img_tag)
+                        html_content = html_content.replace(f"![Chart]({chart_file})", img_tag)
+                        html_content = html_content.replace(f"![chart]({chart_file})", img_tag)
 
                     except Exception as e:
                         print(f"⚠️ Could not embed chart {chart_file}: {e}")
-
-            # --- 2. Convert the final Markdown to HTML ---
-            md = MarkdownIt()
-            html_content = md.render(pdf_content)
             
             # Add a header with timestamp
             timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -424,6 +438,97 @@ class EnhancedPDFGenerator:
         table.setStyle(TableStyle(table_style))
         
         return table
+
+    def _enhance_table_html(self, html_content: str) -> str:
+        """
+        Enhance table HTML to ensure proper rendering in PDFs.
+        """
+        import re
+        
+        # Find and enhance any table elements
+        def enhance_table(match):
+            table_html = match.group(0)
+            
+            # Add table wrapper for better styling
+            enhanced_table = f'''
+            <div style="margin: 20px 0; overflow-x: auto;">
+                {table_html}
+            </div>
+            '''
+            
+            # Ensure table has proper styling attributes
+            if 'style=' not in table_html:
+                enhanced_table = enhanced_table.replace('<table>', 
+                    '<table style="border-collapse: collapse; width: 100%; margin: 10px 0;">')
+            
+            return enhanced_table
+        
+        # Process all tables in the HTML
+        html_content = re.sub(r'<table[^>]*>.*?</table>', enhance_table, html_content, flags=re.DOTALL)
+        
+        # Also handle cases where markdown tables might not be converted properly
+        # Look for pipe-separated table patterns and convert them manually
+        lines = html_content.split('\n')
+        processed_lines = []
+        in_table = False
+        table_rows = []
+        
+        for line in lines:
+            # Check if this looks like a markdown table that wasn't converted
+            if '|' in line and not '<table>' in line and not '</table>' in line:
+                # Simple heuristic: if it has pipes and no HTML tags, it's probably a markdown table
+                if not re.search(r'<[^>]+>', line):
+                    table_rows.append(line.strip())
+                    in_table = True
+                    continue
+            
+            # If we were building a table and now we're not, convert it
+            if in_table and table_rows:
+                html_table = self._convert_markdown_table_to_html(table_rows)
+                processed_lines.append(html_table)
+                table_rows = []
+                in_table = False
+            
+            processed_lines.append(line)
+        
+        # Handle any remaining table
+        if in_table and table_rows:
+            html_table = self._convert_markdown_table_to_html(table_rows)
+            processed_lines.append(html_table)
+        
+        return '\n'.join(processed_lines)
+    
+    def _convert_markdown_table_to_html(self, table_rows: List[str]) -> str:
+        """
+        Convert markdown table rows to proper HTML table.
+        """
+        if not table_rows:
+            return ""
+        
+        html_parts = ['<table style="border-collapse: collapse; width: 100%; margin: 10px 0;">']
+        
+        for i, row in enumerate(table_rows):
+            # Skip separator rows (like |---|---|)
+            if re.match(r'^[\|\s\-:]+$', row):
+                continue
+            
+            # Clean up the row
+            cells = [cell.strip() for cell in row.split('|') if cell.strip()]
+            
+            # First data row is header
+            if i == 0 or (i == 1 and re.match(r'^[\|\s\-:]+$', table_rows[0])):
+                html_parts.append('<thead><tr>')
+                for cell in cells:
+                    html_parts.append(f'<th style="border: 1px solid #ddd; padding: 8px; background-color: #f2f2f6; font-weight: bold;">{cell}</th>')
+                html_parts.append('</tr></thead><tbody>')
+            else:
+                html_parts.append('<tr>')
+                for cell in cells:
+                    html_parts.append(f'<td style="border: 1px solid #ddd; padding: 8px;">{cell}</td>')
+                html_parts.append('</tr>')
+        
+        html_parts.append('</tbody></table>')
+        return '\n'.join(html_parts)
 
 
 class TLDRExtractor:
